@@ -6,6 +6,12 @@
   "scripts": {
     "test": "npm run test"
   },
+  "files": [
+    "index.js",
+    "README.md",
+    "package.json",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Voip24h-Corp/voip24h-sip-gateway.git"
