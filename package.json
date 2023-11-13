@@ -1,0 +1,38 @@
+{
+  "name": "voip24h-sip-gateway",
+  "version": "1.0.0",
+  "description": "sip gateway packages by Voip24h",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "package.json",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Voip24h-Corp/voip24h-sip-gateway.git"
+  },
+  "keywords": [
+    "sip-gateway"
+  ],
+  "author": "Phuong Tran",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Voip24h-Corp/voip24h-sip-gateway/issues"
+  },
+  "homepage": "https://github.com/Voip24h-Corp/voip24h-sip-gateway#readme",
+  "dependencies": {
+		"webrtc-adapter": "8.2.3"
+	},
+	"devDependencies": {
+		"@rollup/plugin-replace": "^5.0.2",
+		"@rollup/plugin-strip": "^3.0.2",
+		"eslint": "^8.39.0",
+		"eslint-plugin-html": "^7.1.0",
+		"rollup": "^3.21.6"
+	}
+}
