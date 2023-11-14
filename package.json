@@ -1,31 +1,32 @@
 {
-  "name": "voip24h-sip-gateway",
-  "version": "1.0.0",
-  "description": "sip gateway packages by Voip24h",
-  "main": "index.js",
-  "scripts": {
-    "test": "npm run test"
-  },
-  "files": [
-    "index.js",
-    "README.md",
-    "package.json",
-    "LICENSE"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Voip24h-Corp/voip24h-sip-gateway.git"
-  },
-  "keywords": [
-    "sip-gateway"
-  ],
-  "author": "Phuong Tran",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Voip24h-Corp/voip24h-sip-gateway/issues"
-  },
-  "homepage": "https://github.com/Voip24h-Corp/voip24h-sip-gateway#readme",
-  "dependencies": {
+	"name": "voip24h-sip-gateway",
+  	"version": "1.0.1",
+  	"description": "sip gateway packages by Voip24h",
+	"main": "dist/voip24h.js",
+	"types": "janus.d.ts",
+	"files": [
+		"dist",
+		"src",
+		"janus.d.ts",
+		"README.md"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Voip24h-Corp/voip24h-sip-gateway.git"
+	},
+	"keywords": [
+	"sip-gateway"
+	],
+	"author": {
+		"name": "Phuong Tran",
+		"email": "phuongtran3110c@gmail.com"
+	},
+	"license": "MIT and VOIP24H",
+	"bugs": {
+		"url": "https://github.com/Voip24h-Corp/voip24h-sip-gateway/issues"
+	},
+	"homepage": "https://github.com/Voip24h-Corp/voip24h-sip-gateway#readme",
+	"dependencies": {
 		"webrtc-adapter": "8.2.3"
 	},
 	"devDependencies": {
@@ -34,5 +35,10 @@
 		"eslint": "^8.39.0",
 		"eslint-plugin-html": "^7.1.0",
 		"rollup": "^3.21.6"
+	},
+	"scripts": {
+		"lint": "eslint ../html --ext .js,.html --resolve-plugins-relative-to ./npm",
+		"rollup": "rollup -c rollup.config.mjs",
+		"prerelease": "npm run rollup -- --o dist/janus.es.js --f es && node -e \"const fs=require('fs'); const data=fs.readFileSync('../html/janus.js'); fs.mkdirSync('./src', {recursive:true}); fs.writeFileSync('./src/janus.js',data);\""
 	}
 }
