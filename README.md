@@ -4,7 +4,6 @@
 ## Mục lục
 
 - [Tính năng và các Event](#tính-năng-và-các-event)
-- [Yêu cầu](#yêu-cầu)
 - [Cài đặt](#cài-đặt)
 - [Sử dụng](#sử-dụng)
 
@@ -50,15 +49,6 @@
 | ServerDown | • Kiểm tra sự kiện server ngưng hoạt động. <br> • Response: {event: thông_tin_sự_kiện}|
 | Closing | • Kiểm tra sự kiện mất tính hiệu do tắt trang.|
 
-
-## Yêu cầu
-
-- Thêm 2 đường dẫn sau vào cặp thẻ `<head>` trong file `index.html`
-
-    ```
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" />
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/adapterjs/0.15.5/adapter.min.js"/>
-    ```
 ## Cài đặt
 Sử dụng npm:
 ```bash
