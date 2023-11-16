@@ -497,4 +497,4 @@ class Voip24hModule {
 
 
 
-export { Voip24hModule }
+export { Voip24hModule, EventSipGateway }
