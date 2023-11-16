@@ -16,39 +16,39 @@
 • Event khởi tạo và đăng ký tài khoản SIP <br>
 | Event | Mô tả và Response |
 | --------- | ----- |
-| registered | • Đăng ký tài khoản SIP thành công.|
-| registration_failed | • Đăng ký tài khoản SIP thất bại. |
+| Registered | • Đăng ký tài khoản SIP thành công.|
+| RegistrationFailed | • Đăng ký tài khoản SIP thất bại. |
 
 • Event cuộc gọi đến <br>
 | Event | Mô tả và Response |
 | --------- | ----- |
-| incomingcall | • Sự kiện đang có cuộc gọi đến. <br> • Response: {phonenumer: số_điện_thoại}|
-| accepted | • Sự kiện chấp nhận cuộc gọi đến. |
-| hangup <br> employer_hangup <br> customer_hangup | • Sự kiện kết thúc cuộc gọi. <br> customer_hangup : Khách hàng cúp máy <br> employer_hangup: Nhân viên cúp máy |
-| reject | • Sự kiện từ chối cuộc gọi đến. |
+| Incomingcall | • Sự kiện đang có cuộc gọi đến. <br> • Response: {phonenumer: số_điện_thoại}|
+| Accepted | • Sự kiện chấp nhận cuộc gọi đến. |
+| Hangup <br> EmployerHangup <br> CustomerHangup | • Sự kiện kết thúc cuộc gọi. <br> CustomerHangup : Khách hàng cúp máy <br> EmployerHangup: Nhân viên cúp máy |
+| Reject | • Sự kiện từ chối cuộc gọi đến. |
 
 • Event cuộc gọi đi <br>
 | Event | Mô tả và Response |
 | --------- | ----- |
-| calling | • Bắt sự kiện cuộc gọi đi. <br> |
-| accepted | • Chấp nhận cuộc gọi đi từ phía người nhận. |
-| hangup <br> employer_hangup <br> customer_hangup | • Sự kiện kết thúc cuộc gọi. <br> customer_hangup : Khách hàng cúp máy <br> employer_hangup: Nhân viên cúp máy |
+| Calling | • Bắt sự kiện cuộc gọi đi. <br> |
+| Accepted | • Chấp nhận cuộc gọi đi từ phía người nhận. |
+| Hangup <br> EmployerHangup <br> CustomerHangup | • Sự kiện kết thúc cuộc gọi. <br> CustomerHangup : Khách hàng cúp máy <br> EmployerHangup: Nhân viên cúp máy |
 
 • Event kiểm tra các xử lý trong cuộc gọi <br>
 | Event | Mô tả và Response |
 | --------- | ----- |
 | transfer | • Chuyển tiếp cuộc gọi. <br> |
 | holding <br> unholding | • Kiểm tra trạng thái giữ cuộc gọi. Hoặc sử dụng hàm <b>isHold( )</b>. |
-| hangup <br> employer_hangup <br> customer_hangup | • Sự kiện kết thúc cuộc gọi. <br> customer_hangup : Khách hàng cúp máy <br> employer_hangup: Nhân viên cúp máy |
+| Hangup <br> EmployerHangup <br> CustomerHangup | • Sự kiện kết thúc cuộc gọi. <br> CustomerHangup : Khách hàng cúp máy <br> EmployerHangup: Nhân viên cúp máy |
 |          |Kiểm tra Bật/Tắt mic sử dụng hàm <b>isMute( )</b>.|
 
 • Event kiểm tra tiến trình WebRTC
 | Event | Mô tả và Response |
 | --------- | ----- |
-| error | • Kiểm tra lỗi trong tiến trình. <br> • Response: {error: thông_tin_lỗi}|
-| destroyed | • Kiểm tra sự kiện hủy tiến trình. |
-| server_down | • Kiểm tra sự kiện server ngưng hoạt động. <br> • Response: {event: thông_tin_sự_kiện}|
-| closing | • Kiểm tra sự kiện mất tính hiệu do tắt trang.|
+| Error | • Kiểm tra lỗi trong tiến trình. <br> • Response: {error: thông_tin_lỗi}|
+| Destroyed | • Kiểm tra sự kiện hủy tiến trình. |
+| ServerDown | • Kiểm tra sự kiện server ngưng hoạt động. <br> • Response: {event: thông_tin_sự_kiện}|
+| Closing | • Kiểm tra sự kiện mất tính hiệu do tắt trang.|
 
 
 ## Yêu cầu
@@ -73,9 +73,9 @@ $ yarn add voip24h-sip-gateway
 • Import thư viện voip24h-sip-gateway vào
 
   ```
-  import { Voip24hModule } from 'voip24h-sip-gateway';
+  import { Voip24hModule, EventSipGateway } from 'voip24h-sip-gateway';
   ```
-• Khởi chạy thự viện bằng cách gọi `Voip24hModule.getInstance()` trong function 'cha' của hệ thống
+• Khởi chạy thư viện bằng cách gọi `Voip24hModule.getInstance()` trong function 'cha' của hệ thống
 
   ```
   var module = Voip24hModule.getInstance()
@@ -84,18 +84,18 @@ $ yarn add voip24h-sip-gateway
   ***Lưu ý: Các sự kiện có trả Response và cách lấy Response:
   | Event | Mô tả và Response |
   | --------- | ----- |
-  | incomingcall | • Sự kiện đang có cuộc gọi đến. <br> • Response: {phonenumer: số_điện_thoại}|
-  | error | • Kiểm tra lỗi trong tiến trình. <br> • Response: {error: thông_tin_lỗi}|
-  | server_down | • Kiểm tra sự kiện server ngưng hoạt động. <br> • Response: {event: thông_tin_sự_kiện}|
+  | Incomingcall | • Sự kiện đang có cuộc gọi đến. <br> • Response: {phonenumer: số_điện_thoại}|
+  | Error | • Kiểm tra lỗi trong tiến trình. <br> • Response: {error: thông_tin_lỗi}|
+  | ServerDown | • Kiểm tra sự kiện server ngưng hoạt động. <br> • Response: {event: thông_tin_sự_kiện}|
   ```
   useEffect(() => {
     module.pushEventToSide(
       {
         onmessageOutSide: function (event,data) {
           console.log("Trạng thái: " + event);
-          if(event === 'incomingcall'){
+          if(event === EventSipGateway.Incomingcall){
             console.log("Số gọi đến: " + data.phonenumber)
-          }else if(event === 'error'){
+          }else if(event === EventSipGateway.Error){
             console.log("Thông tin lỗi: " + data.error)
           }
         }

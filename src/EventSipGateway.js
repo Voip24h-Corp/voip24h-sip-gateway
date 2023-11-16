@@ -1,6 +1,6 @@
 const EventSipGateway = {
     Incomingcall: 'incomingcall',
-    Registration_failed: 'registration_failed',
+    RegistrationFailed: 'registration_failed',
     Registered: 'registered',
     Calling: 'calling',
     Accepting: 'accepting',
@@ -9,13 +9,13 @@ const EventSipGateway = {
     Transfer: 'transfer',
     Hangup: 'hangup',
     Reject: 'reject',
-    Employer_hangup: 'employer_hangup',
-    Customer_hangup: 'customer_hangup',
+    EmployerHangup: 'employer_hangup',
+    CustomerHangup: 'customer_hangup',
     Holding: 'holding',
     Unholding: 'unholding',
     Error: 'error',
     Destroyed: 'destroyed',
-    Server_down: 'server_down',
+    ServerDown: 'server_down',
     Closing: 'closing'
 }
 

@@ -1,18 +1,17 @@
 import logo from './logo.svg';
 import './App.css';
-import { Voip24hModule } from 'voip24h-sip-gateway';
+import { Voip24hModule, EventSipGateway } from 'voip24h-sip-gateway';
 import { useEffect } from 'react';
 
 
 function App() {
   var module = Voip24hModule.getInstance()
-  
   useEffect(() => {
     module.pushEventToSide(
       {
         onmessageOutSide: function (event,data) {
           console.log("Trạng thái: " + event);
-          if(event === 'incomingcall'){
+          if(event === EventSipGateway.Incomingcall){
             console.log("Số người gọi đến: " + data.phonenumber);
           }
         }

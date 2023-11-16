@@ -98,7 +98,7 @@ class Voip24hModule {
                                         let pushEvent = statusCallCurrent?.onmessageOutSide;
                                         if (result && result["event"]) {
                                             var event = result["event"];
-                                            if (event === EventSipGateway.Registration_failed) {
+                                            if (event === EventSipGateway.RegistrationFailed) {
                                                 checkRegistered = "";
                                                 Janus.warn("Registration failed: " + result["code"] + " " + result["reason"]);
                                                 return;
@@ -191,9 +191,9 @@ class Voip24hModule {
                                                 if (result["reason"] == "Busy Here") {
                                                     event = EventSipGateway.Reject
                                                 } else if (result["reason"] == "to BYE") {
-                                                    event = EventSipGateway.Employer_hangup
+                                                    event = EventSipGateway.EmployerHangup
                                                 } else if (result["reason"] == "Session Terminated") {
-                                                    event = EventSipGateway.Customer_hangup
+                                                    event = EventSipGateway.CustomerHangup
                                                 } else {
                                                     event = EventSipGateway.Hangup
                                                 }
@@ -278,7 +278,7 @@ class Voip24hModule {
                             Janus.error(error);
                             let pushEventError = statusCallCurrent?.onmessageOutSide;
                             if (error == "Lost connection to the server (is it down?)") {
-                                pushEventError(EventSipGateway.Server_down, { 'error': error });
+                                pushEventError(EventSipGateway.ServerDown, { 'error': error });
                             } else { pushEventError(EventSipGateway.Error, { 'error': error }); }
                         },
                         destroyed: function () {
