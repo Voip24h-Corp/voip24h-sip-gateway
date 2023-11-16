@@ -26,11 +26,12 @@ var checkRegistered;
 var checkDevice = true;
 var referId;
 var statusCallCurrent = null;
+var debug = "false";
 
 class Voip24hModule {
     constructor() {
         Janus.init({
-            debug: "all", callback: function () {
+            debug: debug, callback: function () {
                 if (!Janus.isWebrtcSupported()) {
                     return;
                 }
@@ -297,7 +298,8 @@ class Voip24hModule {
         });
     }
 
-    static getInstance() {
+    static getInstance(debug2) {
+        debug = debug2
         if (!Voip24hModule.instance) {
             Voip24hModule.instance = new Voip24hModule();
         }
