@@ -2,12 +2,17 @@
 # yarn lockfile v1
 
 
-janus-gateway@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/janus-gateway/-/janus-gateway-1.2.0.tgz#725abf1f4f61a1468875d78a54bbb18748d2132d"
-  integrity sha512-JJ57COT/hyGkHR1lI3WJiFDfdoeM501PoRrlQqOt60yZCNIqnMNStaEpR9HdIvdOvORr6qASdZLa8XmDvf72cw==
+janus-gateway-with-adapter@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/janus-gateway-with-adapter/-/janus-gateway-with-adapter-1.0.0.tgz#87c1b412dc3015a93c526306e09fdf1f93a09b5e"
+  integrity sha512-XBrID8Svw4eDQNKe+oHmZ+99y0YDB/oRQdbrw60lrpoEETG3u8tizY510+lGSbPmq3IJ/YGnfgRoKY8AH04O6g==
   dependencies:
     webrtc-adapter "8.2.3"
+
+jquery@^3.7.1:
+  version "3.7.1"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.7.1.tgz#083ef98927c9a6a74d05a6af02806566d16274de"
+  integrity sha512-m4avr8yL8kmFN8psrbFFFmB/If14iN5o9nw/NgnnM+kybDJpRsAynV2BsfpTYrTRysYUdADVD7CkUUizgkpLfg==
 
 sdp@^3.2.0:
   version "3.2.0"

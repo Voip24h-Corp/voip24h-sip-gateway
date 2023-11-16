@@ -1,5 +1,6 @@
-import Janus from "janus-gateway"
-import { EventSipGateway } from "./EventSipGateway";
+import Janus from "janus-gateway-with-adapter"
+import { EventSipGateway } from "./EventSipGateway"
+import $ from "jquery"
 
 var server = null;
 const rndInt = Math.floor(Math.random() * 100) + 1;
