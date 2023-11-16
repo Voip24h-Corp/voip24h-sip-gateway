@@ -65,10 +65,13 @@ $ yarn add voip24h-sip-gateway
   ```
   import { Voip24hModule, EventSipGateway } from 'voip24h-sip-gateway';
   ```
-• Khởi chạy thư viện bằng cách gọi `Voip24hModule.getInstance()` trong function 'cha' của hệ thống
+• Khởi chạy thư viện bằng cách gọi `Voip24hModule.getInstance()` trong function 'cha' của hệ thống và truyền chuỗi `'all'` để bật debug
 
   ```
+  //Khởi tạo không có debug
   var module = Voip24hModule.getInstance()
+  //Khởi tạo có debug
+  var module = Voip24hModule.getInstance('all')
   ```
 • Khởi tạo hàm để bắt các sự kiện của thư viện trả về. Bằng cách gọi hàm `pushEventToSide` trong hook `useEffect` <br>
   ***Lưu ý: Các sự kiện có trả Response và cách lấy Response:
