@@ -1,15 +1,20 @@
 import logo from './logo.svg';
 import './App.css';
 import { Voip24hModule, EventSipGateway } from 'voip24h-sip-gateway';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
+
+const debug = "all";
+const module = Voip24hModule.getInstance(debug);
+await module.initializeModule();
 
 function App() {
-  var module = Voip24hModule.getInstance()
+  const [phoneNumber, setPhoneNumber] = useState("");
   useEffect(() => {
     module.pushEventToSide(
       {
-        onmessageOutSide: function (event,data) {
+        onmessageOutSide: function (event, data) {
+          console.log(event)
           console.log("Trạng thái: " + event);
           if(event === EventSipGateway.Incomingcall){
             console.log("Số người gọi đến: " + data.phonenumber);
@@ -17,7 +22,13 @@ function App() {
         }
       }
     );
+    module.registerSip("ip_pbx", "sip_number", "password")
   }, []);
+
+  const handlePhoneNumber = (e) => {
+    setPhoneNumber(e.target.value);
+    console.log(e.target.value)
+  }
 
   return (
     <div className="App">
@@ -27,7 +38,8 @@ function App() {
         </p>
         {/* <button onClick={() => module.initGateWay()}>Init service</button> */}
         <button onClick={() => module.registerSip("IP_PBX", "SIP", "PASSWORD")}>Register</button>
-        <button onClick={() => module.call("PHONENUMBER")}>Call</button>
+        <input onChange={e=>handlePhoneNumber(e)}></input>
+          <button onClick={() => module.call(phoneNumber)}>Call</button>
         <button onClick={() => module.hangUp()}>Hang Up</button>
         <button onClick={() => module.answer()}>Answer</button>
         <button onClick={() => module.reject()}>Reject</button>
