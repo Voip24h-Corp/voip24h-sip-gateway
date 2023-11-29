@@ -81,7 +81,7 @@ class Voip24hModule {
                                         },
                                         error: function (error) {
                                             Janus.error("  -- Error attaching plugin...", error);
-                                            reject()
+                                            reject(error)
                                         },
                                         consentDialog: function (on) {
                                             Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
@@ -468,6 +468,10 @@ class Voip24hModule {
 
     isHold = () => {
         return checkHold == "holding"
+    }
+
+    isRegistered = () => { 
+        return checkRegistered == "registered"
     }
 
     hasCheckDevice = () => {
