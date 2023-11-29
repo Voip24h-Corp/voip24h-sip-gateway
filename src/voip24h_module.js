@@ -28,275 +28,8 @@ var referId;
 var statusCallCurrent = null;
 var debug = "false";
 
+
 class Voip24hModule {
-    constructor() {
-        Janus.init({
-            debug: debug, callback: function () {
-                if (!Janus.isWebrtcSupported()) {
-                    return;
-                }
-                let iOS = ['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
-                let eventName = iOS ? 'pagehide' : 'beforeunload';
-                let oldOBF = window["on" + eventName];
-                window.addEventListener(eventName, function () {
-                    for (let s in Janus.sessions) {
-                        if (Janus.sessions[s] && Janus.sessions[s].destroyOnUnload) {
-                            Janus.log("Destroying session " + s);
-                            Janus.sessions[s].destroy({ unload: true, notifyDestroyed: false });
-                        }
-                    }
-                    if (oldOBF && typeof oldOBF == "function") {
-                        oldOBF();
-                    }
-                });
-                // Create session
-                janus = new Janus(
-                    {
-                        server: server,
-                        iceServers: iceServers,
-                        success: function () {
-                            // Attach to SIP plugin
-                            janus.attach(
-                                {
-                                    plugin: "janus.plugin.sip",
-                                    opaqueId: opaqueId,
-                                    success: function (pluginHandle) {
-                                        sipcall = pluginHandle;
-
-                                        Janus.log("Plugin attached! (" + sipcall.getPlugin() + ", id=" + sipcall.getId() + ")");
-                                    },
-                                    error: function (error) {
-                                        Janus.error("  -- Error attaching plugin...", error);
-                                    },
-                                    consentDialog: function (on) {
-                                        Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
-                                    },
-                                    iceState: function (state) {
-                                        Janus.log("ICE state changed to " + state);
-                                    },
-                                    mediaState: function (medium, on, mid) {
-                                        Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium + " (mid=" + mid + ")");
-                                    },
-                                    webrtcState: function (on) {
-                                        Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
-                                    },
-                                    slowLink: function (uplink, lost, mid) {
-                                        Janus.warn("Janus reports problems " + (uplink ? "sending" : "receiving") +
-                                            " packets on mid " + mid + " (" + lost + " lost packets)");
-                                    },
-                                    onmessage: function (msg, jsep) {
-                                        Janus.debug(" ::: Got a message :::", msg);
-                                        var error = msg["error"];
-                                        if (error) {
-                                            if (registered) {
-                                                // Reset status
-                                                sipcall.hangup();
-                                            }
-                                            return;
-                                        }
-                                        var callId = msg["call_id"];
-                                        var result = msg["result"];
-                                        var dataCallback = {};
-                                        let pushEvent = statusCallCurrent?.onmessageOutSide;
-                                        if (result && result["event"]) {
-                                            var event = result["event"];
-                                            if (event === EventSipGateway.RegistrationFailed) {
-                                                checkRegistered = "";
-                                                Janus.warn("Registration failed: " + result["code"] + " " + result["reason"]);
-                                                return;
-                                            }
-                                            if (event === EventSipGateway.Registered) {
-                                                checkRegistered = EventSipGateway.Registered;
-                                                Janus.log("Successfully registered as " + result["username"] + "!");
-                                                registered = true;
-                                                const div1 = document.createElement('div');
-                                                div1.innerHTML = `<div class="hide" id="audiostream"></div>`;
-                                                document.body.insertAdjacentElement('afterbegin', div1);
-                                            } else if (event === EventSipGateway.Calling) {
-                                                Janus.log("Waiting for the peer to answer...");
-                                                // TODO Any ringtone?
-                                            } else if (event === EventSipGateway.Incomingcall) {
-                                                Janus.log("Incoming call from " + result["username"] + "!");
-                                                sipcall.callId = callId;
-                                                var parts = result["username"].split(":");
-                                                var partsPhone = parts[1].split("@");
-                                                var phoneNumber = partsPhone[0];
-                                                doAudio = true
-                                                if (jsep) {
-                                                    doAudio = (jsep.sdp.indexOf("m=audio ") > -1);
-                                                    Janus.debug("Audio " + (doAudio ? "has" : "has NOT") + " been negotiated");
-                                                } else {
-                                                    Janus.log("This call doesn't contain an offer... we'll need to provide one ourselves");
-                                                    offerlessInvite = true;
-                                                }
-                                                var transfer = "";
-                                                var referredBy = result["referred_by"];
-                                                if (referredBy) {
-                                                    transfer = " (referred by " + referredBy + ")";
-                                                    transfer = transfer.replace(new RegExp('<', 'g'), '&lt');
-                                                    transfer = transfer.replace(new RegExp('>', 'g'), '&gt');
-                                                }
-                                                var rtpType = "";
-                                                var srtp = result["srtp"];
-                                                if (srtp === "sdes_optional")
-                                                    rtpType = " (SDES-SRTP offered)";
-                                                else if (srtp === "sdes_mandatory")
-                                                    rtpType = " (SDES-SRTP mandatory)";
-                                                var extra = "";
-                                                if (offerlessInvite) {
-                                                    extra = " (no SDP offer provided)"
-                                                }
-                                                dataJsep = jsep;
-                                                dataCallback = { 'phonenumber': phoneNumber }
-                                            } else if (event === EventSipGateway.Accepting) {
-
-                                            } else if (event === EventSipGateway.Progress) {
-                                                Janus.log("There's early media from " + result["username"] + ", wairing for the call!", jsep);
-                                                // Call can start already: handle the remote answer
-                                                if (jsep) {
-                                                    sipcall.handleRemoteJsep({
-                                                        jsep: jsep, error: () => {
-                                                            var hangup = { request: "hangup" };
-                                                            sipcall.send({ message: hangup });
-                                                            sipcall.hangup();
-                                                        }
-                                                    });
-                                                }
-                                            } else if (event === EventSipGateway.Accepted) {
-                                                Janus.log(result["username"] + " accepted the call!", jsep);
-                                                // Call can start, now: handle the remote answer
-                                                if (jsep) {
-                                                    sipcall.handleRemoteJsep({
-                                                        jsep: jsep, error: () => {
-                                                            var hangup = { request: "hangup" };
-                                                            sipcall.send({ message: hangup });
-                                                            sipcall.hangup();
-                                                        }
-                                                    });
-                                                }
-                                                sipcall.callId = callId;
-                                            } else if (event === EventSipGateway.Transfer) {
-                                                //Event transfer
-                                                var referTo = result["refer_to"];
-                                                var referredBy = result["referred_by"] ? result["referred_by"] : "an unknown party";
-                                                referId = result["refer_id"];
-                                                var replaces = result["replaces"];
-                                                var extra = ("referred by " + referredBy);
-                                                if (replaces)
-                                                    extra += (", replaces call-ID " + replaces);
-                                                extra = extra.replace(new RegExp('<', 'g'), '&lt');
-                                                extra = extra.replace(new RegExp('>', 'g'), '&gt');
-
-                                            } else if (event === EventSipGateway.Hangup) {
-                                                Janus.log("Call hang up (" + result["code"] + " " + result["reason"] + ")!");
-
-                                                if (result["reason"] == "Busy Here") {
-                                                    event = EventSipGateway.Reject
-                                                } else if (result["reason"] == "to BYE") {
-                                                    event = EventSipGateway.EmployerHangup
-                                                } else if (result["reason"] == "Session Terminated") {
-                                                    event = EventSipGateway.CustomerHangup
-                                                } else {
-                                                    event = EventSipGateway.Hangup
-                                                }
-                                                // Reset status
-                                                sipcall.hangup();
-                                            }
-                                            else if (event === EventSipGateway.Holding) {
-                                                checkHold = EventSipGateway.Holding;
-                                                event = EventSipGateway.Holding
-                                            } else {
-                                                checkHold = "";
-                                                event = EventSipGateway.Unholding
-                                            }
-                                        }
-                                        pushEvent(event.toEventSipGateWay(), dataCallback)
-                                    },
-                                    onlocaltrack: function (track, on) {
-                                        Janus.debug("Local track " + (on ? "added" : "removed") + ":", track);
-                                        var trackId = track.id.replace(/[{}]/g, "");
-                                        if (!on) {
-                                            // Track removed, get rid of the stream and the rendering
-                                            var stream = localTracks[trackId];
-                                            if (stream) {
-                                                try {
-                                                    var tracks = stream.getTracks();
-                                                    for (var i in tracks) {
-                                                        var mst = tracks[i];
-                                                        if (mst)
-                                                            mst.stop();
-                                                    }
-                                                } catch (e) { }
-                                            }
-                                            delete localTracks[trackId];
-                                            return;
-                                        }
-                                        // If we're here, a new track was added
-                                        var stream = localTracks[trackId];
-                                        if (stream) {
-                                            // We've been here already
-                                            return;
-                                        }
-                                        if (track.kind === "audio") {
-                                            // We ignore local audio tracks, they'd generate echo anyway
-                                        } else {
-                                            // New video track: create a stream out of it
-                                        }
-                                        if (sipcall.webrtcStuff.pc.iceConnectionState !== "completed" &&
-                                            sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
-                                        }
-                                    },
-                                    onremotetrack: function (track, mid, on) {
-                                        Janus.debug("Remote track (mid=" + mid + ") " + (on ? "added" : "removed") + ":", track);
-                                        if (!on) {
-                                            // Track removed, get rid of the stream and the rendering
-                                            $('#peervideom' + mid).remove();
-                                            delete remoteTracks[mid];
-                                            return;
-                                        }
-                                        // If we're here, a new track was added
-                                        if (track.kind === "audio") {
-                                            // New audio track: create a stream out of it, and use a hidden <audio> element
-                                            var stream = new MediaStream([track]);
-                                            remoteTracks[mid] = stream;
-                                            Janus.log("Created remote audio stream:", stream);
-                                            $('#audiostream').append('<audio class="hide" id="peervideom' + mid + '" autoplay playsinline/>');
-                                            Janus.attachMediaStream($('#peervideom' + mid).get(0), stream);
-                                        }
-                                    },
-                                    oncleanup: function () {
-                                        Janus.log(" ::: Got a cleanup notification :::");
-                                        $('#audiostream').empty();
-                                        if (sipcall) {
-                                            delete sipcall.callId;
-                                            delete sipcall.doAudio;
-                                        }
-                                        localTracks = {};
-                                        remoteTracks = {};
-                                    }
-                                });
-                        },
-                        error: function (error) {
-                            Janus.error(error);
-                            let pushEventError = statusCallCurrent?.onmessageOutSide;
-                            if (error == "Lost connection to the server (is it down?)") {
-                                pushEventError(EventSipGateway.ServerDown, { 'error': error });
-                            } else { pushEventError(EventSipGateway.Error, { 'error': error }); }
-                        },
-                        destroyed: function () {
-                            let pushEventDestroyed = statusCallCurrent?.onmessageOutSide;
-                            window.addEventListener('beforeunload', function (event) {
-                                // Close the peer connection
-                                peer.close();
-                                pushEventDestroyed(EventSipGateway.Closing, { event });
-                            });
-                            pushEventDestroyed(EventSipGateway.Destroyed, {});
-                        }
-                    });
-
-            }
-        });
-    }
 
     static getInstance(debug2) {
         debug = debug2
@@ -308,6 +41,278 @@ class Voip24hModule {
 
     // Other methods and properties of the singleton class
     // ...
+
+    initializeModule = async () => {
+        return new Promise(function (resolve, reject) {
+            Janus.init({
+                debug: debug, callback: function () {
+                    if (!Janus.isWebrtcSupported()) {
+                        return;
+                    }
+                    let iOS = ['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
+                    let eventName = iOS ? 'pagehide' : 'beforeunload';
+                    let oldOBF = window["on" + eventName];
+                    window.addEventListener(eventName, function () {
+                        for (let s in Janus.sessions) {
+                            if (Janus.sessions[s] && Janus.sessions[s].destroyOnUnload) {
+                                Janus.log("Destroying session " + s);
+                                Janus.sessions[s].destroy({ unload: true, notifyDestroyed: false });
+                            }
+                        }
+                        if (oldOBF && typeof oldOBF == "function") {
+                            oldOBF();
+                        }
+                    });
+                    // Create session
+                    janus = new Janus(
+                        {
+                            server: server,
+                            iceServers: iceServers,
+                            success: function () {
+                                // Attach to SIP plugin
+                                janus.attach(
+                                    {
+                                        plugin: "janus.plugin.sip",
+                                        opaqueId: opaqueId,
+                                        success: function (pluginHandle) {
+                                            sipcall = pluginHandle;
+                                            Janus.log("Plugin attached! (" + sipcall.getPlugin() + ", id=" + sipcall.getId() + ")");
+                                            resolve()
+                                        },
+                                        error: function (error) {
+                                            Janus.error("  -- Error attaching plugin...", error);
+                                            reject()
+                                        },
+                                        consentDialog: function (on) {
+                                            Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
+                                        },
+                                        iceState: function (state) {
+                                            Janus.log("ICE state changed to " + state);
+                                        },
+                                        mediaState: function (medium, on, mid) {
+                                            Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium + " (mid=" + mid + ")");
+                                        },
+                                        webrtcState: function (on) {
+                                            Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+                                        },
+                                        slowLink: function (uplink, lost, mid) {
+                                            Janus.warn("Janus reports problems " + (uplink ? "sending" : "receiving") +
+                                                " packets on mid " + mid + " (" + lost + " lost packets)");
+                                        },
+                                        onmessage: function (msg, jsep) {
+                                            Janus.debug(" ::: Got a message :::", msg);
+                                            var error = msg["error"];
+                                            if (error) {
+                                                if (registered) {
+                                                    // Reset status
+                                                    sipcall.hangup();
+                                                }
+                                                return;
+                                            }
+                                            var callId = msg["call_id"];
+                                            var result = msg["result"];
+                                            var dataCallback = {};
+                                            let pushEvent = statusCallCurrent?.onmessageOutSide;
+                                            if (result && result["event"]) {
+                                                var event = result["event"];
+                                                if (event === EventSipGateway.RegistrationFailed) {
+                                                    checkRegistered = "";
+                                                    Janus.warn("Registration failed: " + result["code"] + " " + result["reason"]);
+                                                    return;
+                                                }
+                                                if (event === EventSipGateway.Registered) {
+                                                    checkRegistered = EventSipGateway.Registered;
+                                                    Janus.log("Successfully registered as " + result["username"] + "!");
+                                                    registered = true;
+                                                    const div1 = document.createElement('div');
+                                                    div1.innerHTML = `<div class="hide" id="audiostream"></div>`;
+                                                    document.body.insertAdjacentElement('afterbegin', div1);
+                                                } else if (event === EventSipGateway.Calling) {
+                                                    Janus.log("Waiting for the peer to answer...");
+                                                    // TODO Any ringtone?
+                                                } else if (event === EventSipGateway.Incomingcall) {
+                                                    Janus.log("Incoming call from " + result["username"] + "!");
+                                                    sipcall.callId = callId;
+                                                    var parts = result["username"].split(":");
+                                                    var partsPhone = parts[1].split("@");
+                                                    var phoneNumber = partsPhone[0];
+                                                    doAudio = true
+                                                    if (jsep) {
+                                                        doAudio = (jsep.sdp.indexOf("m=audio ") > -1);
+                                                        Janus.debug("Audio " + (doAudio ? "has" : "has NOT") + " been negotiated");
+                                                    } else {
+                                                        Janus.log("This call doesn't contain an offer... we'll need to provide one ourselves");
+                                                        offerlessInvite = true;
+                                                    }
+                                                    var transfer = "";
+                                                    var referredBy = result["referred_by"];
+                                                    if (referredBy) {
+                                                        transfer = " (referred by " + referredBy + ")";
+                                                        transfer = transfer.replace(new RegExp('<', 'g'), '&lt');
+                                                        transfer = transfer.replace(new RegExp('>', 'g'), '&gt');
+                                                    }
+                                                    var rtpType = "";
+                                                    var srtp = result["srtp"];
+                                                    if (srtp === "sdes_optional")
+                                                        rtpType = " (SDES-SRTP offered)";
+                                                    else if (srtp === "sdes_mandatory")
+                                                        rtpType = " (SDES-SRTP mandatory)";
+                                                    var extra = "";
+                                                    if (offerlessInvite) {
+                                                        extra = " (no SDP offer provided)"
+                                                    }
+                                                    dataJsep = jsep;
+                                                    dataCallback = { 'phonenumber': phoneNumber }
+                                                } else if (event === EventSipGateway.Accepting) {
+
+                                                } else if (event === EventSipGateway.Progress) {
+                                                    Janus.log("There's early media from " + result["username"] + ", wairing for the call!", jsep);
+                                                    // Call can start already: handle the remote answer
+                                                    if (jsep) {
+                                                        sipcall.handleRemoteJsep({
+                                                            jsep: jsep, error: () => {
+                                                                var hangup = { request: "hangup" };
+                                                                sipcall.send({ message: hangup });
+                                                                sipcall.hangup();
+                                                            }
+                                                        });
+                                                    }
+                                                } else if (event === EventSipGateway.Accepted) {
+                                                    Janus.log(result["username"] + " accepted the call!", jsep);
+                                                    // Call can start, now: handle the remote answer
+                                                    if (jsep) {
+                                                        sipcall.handleRemoteJsep({
+                                                            jsep: jsep, error: () => {
+                                                                var hangup = { request: "hangup" };
+                                                                sipcall.send({ message: hangup });
+                                                                sipcall.hangup();
+                                                            }
+                                                        });
+                                                    }
+                                                    sipcall.callId = callId;
+                                                } else if (event === EventSipGateway.Transfer) {
+                                                    //Event transfer
+                                                    var referTo = result["refer_to"];
+                                                    var referredBy = result["referred_by"] ? result["referred_by"] : "an unknown party";
+                                                    referId = result["refer_id"];
+                                                    var replaces = result["replaces"];
+                                                    var extra = ("referred by " + referredBy);
+                                                    if (replaces)
+                                                        extra += (", replaces call-ID " + replaces);
+                                                    extra = extra.replace(new RegExp('<', 'g'), '&lt');
+                                                    extra = extra.replace(new RegExp('>', 'g'), '&gt');
+
+                                                } else if (event === EventSipGateway.Hangup) {
+                                                    Janus.log("Call hang up (" + result["code"] + " " + result["reason"] + ")!");
+
+                                                    if (result["reason"] == "Busy Here") {
+                                                        event = EventSipGateway.Reject
+                                                    } else if (result["reason"] == "to BYE") {
+                                                        event = EventSipGateway.EmployerHangup
+                                                    } else if (result["reason"] == "Session Terminated") {
+                                                        event = EventSipGateway.CustomerHangup
+                                                    } else {
+                                                        event = EventSipGateway.Hangup
+                                                    }
+                                                    // Reset status
+                                                    sipcall.hangup();
+                                                }
+                                                else if (event === EventSipGateway.Holding) {
+                                                    checkHold = EventSipGateway.Holding;
+                                                    event = EventSipGateway.Holding
+                                                } else {
+                                                    checkHold = "";
+                                                    event = EventSipGateway.Unholding
+                                                }
+                                            }
+                                            pushEvent(event.toEventSipGateWay(), dataCallback)
+                                        },
+                                        onlocaltrack: function (track, on) {
+                                            Janus.debug("Local track " + (on ? "added" : "removed") + ":", track);
+                                            var trackId = track.id.replace(/[{}]/g, "");
+                                            if (!on) {
+                                                // Track removed, get rid of the stream and the rendering
+                                                var stream = localTracks[trackId];
+                                                if (stream) {
+                                                    try {
+                                                        var tracks = stream.getTracks();
+                                                        for (var i in tracks) {
+                                                            var mst = tracks[i];
+                                                            if (mst)
+                                                                mst.stop();
+                                                        }
+                                                    } catch (e) { }
+                                                }
+                                                delete localTracks[trackId];
+                                                return;
+                                            }
+                                            // If we're here, a new track was added
+                                            var stream = localTracks[trackId];
+                                            if (stream) {
+                                                // We've been here already
+                                                return;
+                                            }
+                                            if (track.kind === "audio") {
+                                                // We ignore local audio tracks, they'd generate echo anyway
+                                            } else {
+                                                // New video track: create a stream out of it
+                                            }
+                                            if (sipcall.webrtcStuff.pc.iceConnectionState !== "completed" &&
+                                                sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
+                                            }
+                                        },
+                                        onremotetrack: function (track, mid, on) {
+                                            Janus.debug("Remote track (mid=" + mid + ") " + (on ? "added" : "removed") + ":", track);
+                                            if (!on) {
+                                                // Track removed, get rid of the stream and the rendering
+                                                $('#peervideom' + mid).remove();
+                                                delete remoteTracks[mid];
+                                                return;
+                                            }
+                                            // If we're here, a new track was added
+                                            if (track.kind === "audio") {
+                                                // New audio track: create a stream out of it, and use a hidden <audio> element
+                                                var stream = new MediaStream([track]);
+                                                remoteTracks[mid] = stream;
+                                                Janus.log("Created remote audio stream:", stream);
+                                                $('#audiostream').append('<audio class="hide" id="peervideom' + mid + '" autoplay playsinline/>');
+                                                Janus.attachMediaStream($('#peervideom' + mid).get(0), stream);
+                                            }
+                                        },
+                                        oncleanup: function () {
+                                            Janus.log(" ::: Got a cleanup notification :::");
+                                            $('#audiostream').empty();
+                                            if (sipcall) {
+                                                delete sipcall.callId;
+                                                delete sipcall.doAudio;
+                                            }
+                                            localTracks = {};
+                                            remoteTracks = {};
+                                        }
+                                    });
+                            },
+                            error: function (error) {
+                                Janus.error(error);
+                                let pushEventError = statusCallCurrent?.onmessageOutSide;
+                                if (error == "Lost connection to the server (is it down?)") {
+                                    pushEventError(EventSipGateway.ServerDown, { 'error': error });
+                                } else { pushEventError(EventSipGateway.Error, { 'error': error }); }
+                            },
+                            destroyed: function () {
+                                let pushEventDestroyed = statusCallCurrent?.onmessageOutSide;
+                                window.addEventListener('beforeunload', function (event) {
+                                    // Close the peer connection
+                                    peer.close();
+                                    pushEventDestroyed(EventSipGateway.Closing, { event });
+                                });
+                                pushEventDestroyed(EventSipGateway.Destroyed, {});
+                            }
+                        });
+
+                }
+            });
+        });
+    }
 
     pushEventToSide = (callbackToOutSide) => {
         statusCallCurrent = (typeof callbackToOutSide.onmessageOutSide == "function") ? callbackToOutSide : () => { };
