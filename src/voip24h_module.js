@@ -351,7 +351,7 @@ class Voip24hModule {
                     }
                 });
         } else {
-            console.log("You must be register SIP before call !!!")
+            Janus.log("You must be register SIP before call !!!")
             return false;
         }
     }
@@ -406,7 +406,6 @@ class Voip24hModule {
         let tracks = [];
         if (doAudio)
             tracks.push({ type: 'audio', capture: true, recv: true });
-        console.log(dataJsep);
         sipcallAction(
             {
                 jsep: dataJsep,
@@ -449,7 +448,6 @@ class Voip24hModule {
 
     transfer = (transferToNumber) => {
         var address = "sip:" + transferToNumber + "@" + ip;
-        console.log(address);
         if (address === '') { return; }
         var msg = { request: "transfer", uri: address };
         sipcall.send({ message: msg });
