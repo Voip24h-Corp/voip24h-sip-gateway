@@ -11,6 +11,7 @@ const EventSipGateway = {
     Reject: 'reject',
     EmployerHangup: 'employer_hangup',
     CustomerHangup: 'customer_hangup',
+    Missed: 'missed',
     Holding: 'holding',
     Unholding: 'unholding',
     Error: 'error',
@@ -19,8 +20,16 @@ const EventSipGateway = {
     Closing: 'closing'
 }
 
+
+const EventHangup = {
+    BusyHere: 'Busy Here',
+    ToBye: 'to BYE',
+    SessionTerminated: 'Session Terminated',
+    RequestTerminated: 'Request Terminated'
+}
+
 String.prototype.toEventSipGateWay = function() {
     return Object.values(EventSipGateway).find((value) => value === this)
 }
 
-export { EventSipGateway }
+export { EventSipGateway, EventHangup }
