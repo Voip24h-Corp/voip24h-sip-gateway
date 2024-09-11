@@ -35,7 +35,7 @@ class Voip24hModule {
 
     _setServer() {
         const rndInt = Math.floor(Math.random() * 100) + 1;
-        return (rndInt % 2 === 0) ? "https://janus.voip24h.vn/janus" : "https://janus2.voip24h.vn/janus";
+        return (rndInt % 2 === 0) ? "https://janus3.voip24h.vn/janus" : "https://janus4.voip24h.vn/janus";
     }
 
     static getInstance(debug2) {
