@@ -884,7 +884,7 @@ class Voip24hModule {
 
 
     rejectHelper = async() => {
-        var body = { request: "decline", refer_id: this.referId };
+        var body = { request: "decline" };
         this.sipcallHelper.send({ message: body });
     }
 
