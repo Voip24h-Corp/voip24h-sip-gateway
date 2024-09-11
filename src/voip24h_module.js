@@ -460,7 +460,7 @@ class Voip24hModule {
     }
 
     reject = async() => {
-        var body = { request: "decline", refer_id: this.referId };
+        var body = { request: "decline" };
         this.sipcall.send({ message: body });
     }
 
