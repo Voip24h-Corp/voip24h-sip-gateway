@@ -391,6 +391,8 @@ class Voip24hModule {
 
     hangUp() {
         Janus.log("Hanging up call");
+        var hangup = { request: "hangup" };
+		this.sipcall.send({ message: hangup });
         this.sipcall.hangup();
     }
 
