@@ -427,7 +427,7 @@ class Voip24hModule {
 
     call = async (phonenumber) => {
         if (this.isRegistered() == true) {
-            this.hangUp()
+            // this.hangUp()
             var helperId = null;
             var handle = helperId ? helpers[helperId].sipcall : this.sipcall;
             var prefix = helperId ? ("[Helper #" + helperId + "]") : "";
