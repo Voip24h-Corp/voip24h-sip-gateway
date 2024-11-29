@@ -485,6 +485,7 @@ class Voip24hModule {
                         Janus.error(`${prefix} WebRTC error...`, error);
                         if (String(error).includes("Requested device not found")) {
                             this.checkDevice = false;
+                            resolve("DEVICE_NOT_FOUND");
                         }
                         resolve(false);
                     },
