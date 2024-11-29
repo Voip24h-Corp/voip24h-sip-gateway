@@ -445,6 +445,7 @@ class Voip24hModule {
                         var body = { request: "call", uri: usernameAc };
                         body["autoaccept_reinvites"] = false;
                         handle.send({ message: body, jsep: jsep });
+                        return true;
                     },
                     error: function (error) {
                         Janus.error(prefix + "WebRTC error...", error);
@@ -452,7 +453,7 @@ class Voip24hModule {
                         if (result) {
                             this.checkDevice = false;
                         }
-
+                        return false;
                     }
                 });
         } else {
