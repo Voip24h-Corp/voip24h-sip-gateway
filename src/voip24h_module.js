@@ -496,6 +496,36 @@ class Voip24hModule {
             return false;
         }
     };
+
+    call_ext = async (phonenumber) => {
+        if (this.isRegistered() === true) {
+            // this.hangUp();
+            const helperId = null;
+            const handle = helperId ? helpers[helperId].sipcall : this.sipcall;
+            const prefix = helperId ? `[Helper #${helperId}]` : "";
+            const usernameAc = `sip:${phonenumber}@${this.ip}`;
+            handle.doAudio = true;
+            const tracks = [{ type: "audio", capture: true, recv: true }];
+    
+            handle.createOffer({
+                tracks: tracks,
+                success: (jsep) => {
+                    Janus.debug("Got SDP!", jsep);
+                    const body = { request: "call", uri: usernameAc, autoaccept_reinvites: false };
+                    handle.send({ message: body, jsep: jsep });
+                },
+                error: (error) => {
+                    Janus.error(`${prefix} WebRTC error...`, error);
+                    if (String(error).includes("Requested device not found")) {
+                        this.checkDevice = false;
+                    }
+                },
+            });
+        } else {
+            Janus.log("You must be registered with SIP before calling!");
+            return false;
+        }
+    };
     
 
     reject = async() => {
