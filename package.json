@@ -1,6 +1,6 @@
 {
 	"name": "voip24h-sip-gateway",
-	"version": "1.0.8",
+	"version": "1.1.0",
 	"description": "Sip gateway is libary to use WebRTC custom by VOIP24h",
 	"main": "src/voip24h_module.js",
 	"scripts": {
