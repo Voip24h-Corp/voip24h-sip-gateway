@@ -425,41 +425,108 @@ class Voip24hModule {
 		return this.checkRegistered == EventSipGateway.Registered
 	}
 
+    // call = async (phonenumber) => {
+    //     if (this.isRegistered() == true) {
+    //         // this.hangUp()
+    //         var helperId = null;
+    //         var handle = helperId ? helpers[helperId].sipcall : this.sipcall;
+    //         var prefix = helperId ? ("[Helper #" + helperId + "]") : "";
+    //         var suffix = helperId ? ("" + helperId) : "";
+    //         var usernameAc = null;
+    //         usernameAc = "sip:" + phonenumber + "@" + this.ip;
+    //         handle.doAudio = true;
+    //         let tracks = [{ type: 'audio', capture: true, recv: true }];
+
+    //         handle.createOffer(
+    //             {
+    //                 tracks: tracks,
+    //                 success: function (jsep) {
+    //                     Janus.debug("Got SDP!", jsep);
+    //                     var body = { request: "call", uri: usernameAc };
+    //                     body["autoaccept_reinvites"] = false;
+    //                     handle.send({ message: body, jsep: jsep });
+    //                     return true;
+    //                 },
+    //                 error: function (error) {
+    //                     Janus.error(prefix + "WebRTC error...", error);
+    //                     let result = String(error).includes("Requested device not found");
+    //                     if (result) {
+    //                         this.checkDevice = false;
+    //                     }
+    //                     return false;
+    //                 }
+    //             });
+    //     } else {
+    //         Janus.log("You must be register SIP before call !!!")
+    //         return false;
+    //     }
+    // }
+
     call = async (phonenumber) => {
-        if (this.isRegistered() == true) {
-            this.hangUp()
-            var helperId = null;
-            var handle = helperId ? helpers[helperId].sipcall : this.sipcall;
-            var prefix = helperId ? ("[Helper #" + helperId + "]") : "";
-            var suffix = helperId ? ("" + helperId) : "";
-            var usernameAc = null;
-            usernameAc = "sip:" + phonenumber + "@" + this.ip;
+        if (this.isRegistered() === true) {
+            // this.hangUp();
+            const helperId = null;
+            const handle = helperId ? helpers[helperId].sipcall : this.sipcall;
+            const prefix = helperId ? `[Helper #${helperId}]` : "";
+            const usernameAc = `sip:${phonenumber}@${this.ip}`;
             handle.doAudio = true;
-            let tracks = [{ type: 'audio', capture: true, recv: true }];
-
-            handle.createOffer(
-                {
+            const tracks = [{ type: "audio", capture: true, recv: true }];
+    
+            return new Promise((resolve) => {
+                handle.createOffer({
                     tracks: tracks,
-                    success: function (jsep) {
+                    success: (jsep) => {
                         Janus.debug("Got SDP!", jsep);
-                        var body = { request: "call", uri: usernameAc };
-                        body["autoaccept_reinvites"] = false;
+                        const body = { request: "call", uri: usernameAc, autoaccept_reinvites: false };
                         handle.send({ message: body, jsep: jsep });
+                        resolve(true);
                     },
-                    error: function (error) {
-                        Janus.error(prefix + "WebRTC error...", error);
-                        let result = String(error).includes("Requested device not found");
-                        if (result) {
+                    error: (error) => {
+                        Janus.error(`${prefix} WebRTC error...`, error);
+                        if (String(error).includes("Requested device not found")) {
                             this.checkDevice = false;
+                            resolve("DEVICE_NOT_FOUND");
                         }
-
-                    }
+                        resolve(false);
+                    },
                 });
+            });
         } else {
-            Janus.log("You must be register SIP before call !!!")
+            Janus.log("You must be registered with SIP before calling!");
             return false;
         }
-    }
+    };
+
+    call_ext = async (phonenumber) => {
+        if (this.isRegistered() === true) {
+            // this.hangUp();
+            const helperId = null;
+            const handle = helperId ? helpers[helperId].sipcall : this.sipcall;
+            const prefix = helperId ? `[Helper #${helperId}]` : "";
+            const usernameAc = `sip:${phonenumber}@${this.ip}`;
+            handle.doAudio = true;
+            const tracks = [{ type: "audio", capture: true, recv: true }];
+    
+            handle.createOffer({
+                tracks: tracks,
+                success: (jsep) => {
+                    Janus.debug("Got SDP!", jsep);
+                    const body = { request: "call", uri: usernameAc, autoaccept_reinvites: false };
+                    handle.send({ message: body, jsep: jsep });
+                },
+                error: (error) => {
+                    Janus.error(`${prefix} WebRTC error...`, error);
+                    if (String(error).includes("Requested device not found")) {
+                        this.checkDevice = false;
+                    }
+                },
+            });
+        } else {
+            Janus.log("You must be registered with SIP before calling!");
+            return false;
+        }
+    };
+    
 
     reject = async() => {
         var body = { request: "decline" };
