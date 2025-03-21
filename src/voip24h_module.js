@@ -375,7 +375,11 @@ class Voip24hModule {
             return;
         }
         this.checkDevice = true;
-        this.initializeModule();
+        let pushEvent = this.statusCallCurrent?.onmessageOutSide;
+        if (pushEvent) {
+            pushEvent(error, error);
+        }
+        // this.initializeModule();
     }
 
     _handleJanusDestroyed() {
@@ -419,48 +423,12 @@ class Voip24hModule {
         }
         register["secret"] = password;
         register["proxy"] = sipserver;
-        this.sipcall.send({ message: register });
+        this.sipcall?.send({ message: register });
     }
     isRegistered() { 
 		return this.checkRegistered == EventSipGateway.Registered
 	}
 
-    // call = async (phonenumber) => {
-    //     if (this.isRegistered() == true) {
-    //         // this.hangUp()
-    //         var helperId = null;
-    //         var handle = helperId ? helpers[helperId].sipcall : this.sipcall;
-    //         var prefix = helperId ? ("[Helper #" + helperId + "]") : "";
-    //         var suffix = helperId ? ("" + helperId) : "";
-    //         var usernameAc = null;
-    //         usernameAc = "sip:" + phonenumber + "@" + this.ip;
-    //         handle.doAudio = true;
-    //         let tracks = [{ type: 'audio', capture: true, recv: true }];
-
-    //         handle.createOffer(
-    //             {
-    //                 tracks: tracks,
-    //                 success: function (jsep) {
-    //                     Janus.debug("Got SDP!", jsep);
-    //                     var body = { request: "call", uri: usernameAc };
-    //                     body["autoaccept_reinvites"] = false;
-    //                     handle.send({ message: body, jsep: jsep });
-    //                     return true;
-    //                 },
-    //                 error: function (error) {
-    //                     Janus.error(prefix + "WebRTC error...", error);
-    //                     let result = String(error).includes("Requested device not found");
-    //                     if (result) {
-    //                         this.checkDevice = false;
-    //                     }
-    //                     return false;
-    //                 }
-    //             });
-    //     } else {
-    //         Janus.log("You must be register SIP before call !!!")
-    //         return false;
-    //     }
-    // }
 
     call = async (phonenumber) => {
         if (this.isRegistered() === true) {
