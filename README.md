@@ -1,5 +1,5 @@
 # voip24h-sip-gateway
-[![NPM version](https://img.shields.io/npm/v/voip24h-sip-gateway.svg?style=flat)]([https://www.npmjs.com/package/voip24h-sip-gateway])
+[![NPM version](https://img.shields.io/npm/v/voip24h-sip-gateway.svg?style=flat)](https://www.npmjs.com/package/voip24h-sip-gateway)
 
 ## Mục lục
 
