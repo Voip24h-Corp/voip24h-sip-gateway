@@ -31,6 +31,8 @@ class Voip24hModule {
         this.referIdHelper;
         this.statusCallCurrent = null;
         this.debug = "false";
+        this.inCall = false;        // đang có call active
+        this.readyForNext = true;   // Janus đã cleanup xong, cho phép call tiếp
     }
 
     _setServer() {
@@ -269,10 +271,12 @@ class Voip24hModule {
     _handleHangup(result) {
         Janus.log("Call hung up (" + result["code"] + " " + result["reason"] + ")!");
         this.dataJsep = "";
-        this.sipcall.hangup();
+        // this.sipcall.hangup();
         this.sipcall.callId = null;
         this.doAudio = true;
         this.offerlessInvite = false;
+
+        this.inCall = false;  // call đã kết thúc, nhưng có thể chưa cleanup xong
         const dataCallback = {};
         let event = EventSipGateway.Hangup;
         const reasonHangup = result["reason"];
@@ -362,6 +366,9 @@ class Voip24hModule {
 		}
 		this.localTracks = {};
 		this.remoteTracks = {};
+
+        // RẤT QUAN TRỌNG: đánh dấu đã sẵn sàng cho call mới
+        this.readyForNext = true;
     }
 
     _handleJanusError(error) {
@@ -463,43 +470,59 @@ class Voip24hModule {
     // }
 
     call = async (phonenumber) => {
-        if (this.isRegistered() === true) {
-            // this.hangUp();
-            const helperId = null;
-            const handle = helperId ? helpers[helperId].sipcall : this.sipcall;
-            const prefix = helperId ? `[Helper #${helperId}]` : "";
-            const usernameAc = `sip:${phonenumber}@${this.ip}`;
-            handle.doAudio = true;
-            const tracks = [{ type: "audio", capture: true, recv: true }];
-    
-            return new Promise((resolve) => {
-                handle.createOffer({
-                    tracks: tracks,
-                    success: (jsep) => {
-                        Janus.debug("Got SDP!", jsep);
-                        const body = { request: "call", uri: usernameAc, autoaccept_reinvites: false };
-                        handle.send({ message: body, jsep: jsep });
-                        resolve(true);
-                    },
-                    error: (error) => {
-                        Janus.error(`${prefix} WebRTC error...`, error);
-                        if (String(error).includes("Requested device not found")) {
-                            this.checkDevice = false;
-                            resolve("DEVICE_NOT_FOUND");
-                        }
-                        resolve(false);
-                    },
-                });
-            });
-        } else {
+        if (!this.isRegistered()) {
             Janus.log("You must be registered with SIP before calling!");
             return false;
         }
+
+        if (!this.readyForNext) {
+            Janus.warn("Call not allowed: previous call not fully cleaned up yet");
+            return false; // hoặc chờ (đợi readyForNext=true) nếu bạn muốn block tại đây
+        }
+
+        this.inCall = true;
+        this.readyForNext = false;
+
+        const helperId = null;
+        const handle = helperId ? this.helpers[helperId].sipcall : this.sipcall;
+        const usernameAc = `sip:${phonenumber}@${this.ip}`;
+        handle.doAudio = true;
+        const tracks = [{ type: "audio", capture: true, recv: true }];
+
+        return new Promise((resolve) => {
+            handle.createOffer({
+            tracks,
+            success: (jsep) => {
+                Janus.debug("Got SDP!", jsep);
+                const body = { request: "call", uri: usernameAc, autoaccept_reinvites: false };
+                handle.send({ message: body, jsep });
+                resolve(true);
+            },
+            error: (error) => {
+                Janus.error("WebRTC error...", error);
+                if (String(error).includes("Requested device not found")) {
+                    this.checkDevice = false;
+                    resolve("DEVICE_NOT_FOUND");
+                }
+                this.inCall = false;
+                this.readyForNext = true;
+                resolve(false);
+            },
+            });
+        });
     };
 
     call_ext = async (phonenumber) => {
         if (this.isRegistered() === true) {
             // this.hangUp();
+            if (!this.readyForNext) {
+                Janus.warn("Call not allowed: previous call not fully cleaned up yet");
+                return false; // hoặc chờ (đợi readyForNext=true) nếu bạn muốn block tại đây
+            }
+
+            this.inCall = true;
+            this.readyForNext = false;
+
             const helperId = null;
             const handle = helperId ? helpers[helperId].sipcall : this.sipcall;
             const prefix = helperId ? `[Helper #${helperId}]` : "";
@@ -519,6 +542,8 @@ class Voip24hModule {
                     if (String(error).includes("Requested device not found")) {
                         this.checkDevice = false;
                     }
+                    this.inCall = false;
+                    this.readyForNext = true;
                 },
             });
         } else {
@@ -948,7 +973,7 @@ class Voip24hModule {
     }
    
     isRegisteredHelper() { 
-		return this.checkRegistered == EventSipGateway.Registered
+		return this.checkRegisteredHelper == EventSipGateway.Registered
 	}
 
 
