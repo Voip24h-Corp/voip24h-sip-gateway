@@ -31,13 +31,15 @@ class Voip24hModule {
         this.referIdHelper;
         this.statusCallCurrent = null;
         this.debug = "false";
-        this.inCall = false;        // đang có call active
-        this.readyForNext = true;   // Janus đã cleanup xong, cho phép call tiếp
+        this.inCall = false; // đang có call active
+        this.readyForNext = true; // Janus đã cleanup xong, cho phép call tiếp
     }
 
     _setServer() {
         const rndInt = Math.floor(Math.random() * 100) + 1;
-        return (rndInt % 2 === 0) ? "https://janus3.voip24h.vn/janus" : "https://janus4.voip24h.vn/janus";
+        return rndInt % 2 === 0
+            ? "https://janus3.voip24h.vn/janus"
+            : "https://janus4.voip24h.vn/janus";
     }
 
     static getInstance(debug2) {
@@ -57,14 +59,23 @@ class Voip24hModule {
                         return;
                     }
 
-                    const iOS = ['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
-                    const eventName = iOS ? 'pagehide' : 'beforeunload';
+                    const iOS =
+                        ["iPad", "iPhone", "iPod"].indexOf(
+                            navigator.platform,
+                        ) >= 0;
+                    const eventName = iOS ? "pagehide" : "beforeunload";
                     const oldOBF = window["on" + eventName];
                     window.addEventListener(eventName, () => {
                         for (let s in Janus.sessions) {
-                            if (Janus.sessions[s] && Janus.sessions[s].destroyOnUnload) {
+                            if (
+                                Janus.sessions[s] &&
+                                Janus.sessions[s].destroyOnUnload
+                            ) {
                                 Janus.log("Destroying session " + s);
-                                Janus.sessions[s].destroy({ unload: true, notifyDestroyed: false });
+                                Janus.sessions[s].destroy({
+                                    unload: true,
+                                    notifyDestroyed: false,
+                                });
                             }
                         }
                         if (oldOBF && typeof oldOBF === "function") {
@@ -81,9 +92,9 @@ class Voip24hModule {
                             this._handleJanusError(error);
                             reject(error);
                         },
-                        destroyed: () => this._handleJanusDestroyed()
+                        destroyed: () => this._handleJanusDestroyed(),
                     });
-                }
+                },
             });
         });
     }
@@ -94,7 +105,13 @@ class Voip24hModule {
             opaqueId: this.opaqueId,
             success: (pluginHandle) => {
                 this.sipcall = pluginHandle;
-                Janus.log("Plugin attached! (" + this.sipcall.getPlugin() + ", id=" + this.sipcall.getId() + ")");
+                Janus.log(
+                    "Plugin attached! (" +
+                        this.sipcall.getPlugin() +
+                        ", id=" +
+                        this.sipcall.getId() +
+                        ")",
+                );
                 resolve();
             },
             error: (error) => {
@@ -102,24 +119,47 @@ class Voip24hModule {
                 reject(error);
             },
             consentDialog: (on) => {
-                Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
+                Janus.debug(
+                    "Consent dialog should be " + (on ? "on" : "off") + " now",
+                );
             },
             iceState: (state) => {
                 Janus.log("ICE state changed to " + state);
             },
             mediaState: (medium, on, mid) => {
-                Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium + " (mid=" + mid + ")");
+                Janus.log(
+                    "Janus " +
+                        (on ? "started" : "stopped") +
+                        " receiving our " +
+                        medium +
+                        " (mid=" +
+                        mid +
+                        ")",
+                );
             },
             webrtcState: (on) => {
-                Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+                Janus.log(
+                    "Janus says our WebRTC PeerConnection is " +
+                        (on ? "up" : "down") +
+                        " now",
+                );
             },
             slowLink: (uplink, lost, mid) => {
-                Janus.warn("Janus reports problems " + (uplink ? "sending" : "receiving") + " packets on mid " + mid + " (" + lost + " lost packets)");
+                Janus.warn(
+                    "Janus reports problems " +
+                        (uplink ? "sending" : "receiving") +
+                        " packets on mid " +
+                        mid +
+                        " (" +
+                        lost +
+                        " lost packets)",
+                );
             },
             onmessage: (msg, jsep) => this._handleOnMessage(msg, jsep),
             onlocaltrack: (track, on) => this._handleOnLocalTrack(track, on),
-            onremotetrack: (track, mid, on) => this._handleOnRemoteTrack(track, mid, on),
-            oncleanup: () => this._handleOnCleanup()
+            onremotetrack: (track, mid, on) =>
+                this._handleOnRemoteTrack(track, mid, on),
+            oncleanup: () => this._handleOnCleanup(),
         });
     }
 
@@ -142,18 +182,28 @@ class Voip24hModule {
                 case EventSipGateway.RegistrationFailed:
                     this.checkRegistered = "";
                     event = EventSipGateway.RegistrationFailed;
-                    Janus.warn("Registration failed: " + result["code"] + " " + result["reason"]);
+                    Janus.warn(
+                        "Registration failed: " +
+                            result["code"] +
+                            " " +
+                            result["reason"],
+                    );
                     break;
                 case EventSipGateway.Registered:
                     event = EventSipGateway.Registered;
                     this._handleRegistered(result, jsep);
                     break;
                 case EventSipGateway.Calling:
-                    event === EventSipGateway.Calling
+                    event === EventSipGateway.Calling;
                     Janus.log("Waiting for the peer to answer...");
                     break;
                 case EventSipGateway.Incomingcall:
-                    this._handleIncomingCall(result, jsep, callId, dataCallback);
+                    this._handleIncomingCall(
+                        result,
+                        jsep,
+                        callId,
+                        dataCallback,
+                    );
                     return;
                 case EventSipGateway.Accepting:
                     return;
@@ -189,9 +239,9 @@ class Voip24hModule {
         Janus.log("Successfully registered as " + result["username"] + "!");
         this.registered = true;
         this.master_id = result["master_id"];
-        const div1 = document.createElement('div');
+        const div1 = document.createElement("div");
         div1.innerHTML = `<div class="hide" id="audiostream"></div>`;
-        document.body.insertAdjacentElement('afterbegin', div1);
+        document.body.insertAdjacentElement("afterbegin", div1);
     }
 
     _handleIncomingCall(result, jsep, callId, dataCallback) {
@@ -202,25 +252,29 @@ class Voip24hModule {
         const phoneNumber = partsPhone[0];
         this.doAudio = true;
         if (jsep) {
-            this.doAudio = (jsep.sdp.indexOf("m=audio ") > -1);
-            Janus.debug("Audio " + (this.doAudio ? "has" : "has NOT") + " been negotiated");
+            this.doAudio = jsep.sdp.indexOf("m=audio ") > -1;
+            Janus.debug(
+                "Audio " +
+                    (this.doAudio ? "has" : "has NOT") +
+                    " been negotiated",
+            );
         } else {
-            Janus.log("This call doesn't contain an offer... we'll need to provide one ourselves");
+            Janus.log(
+                "This call doesn't contain an offer... we'll need to provide one ourselves",
+            );
             this.offerlessInvite = true;
         }
         let transfer = "";
         const referredBy = result["referred_by"];
         if (referredBy) {
             transfer = " (referred by " + referredBy + ")";
-            transfer = transfer.replace(new RegExp('<', 'g'), '&lt');
-            transfer = transfer.replace(new RegExp('>', 'g'), '&gt');
+            transfer = transfer.replace(new RegExp("<", "g"), "&lt");
+            transfer = transfer.replace(new RegExp(">", "g"), "&gt");
         }
         let rtpType = "";
         const srtp = result["srtp"];
-        if (srtp === "sdes_optional")
-            rtpType = " (SDES-SRTP offered)";
-        else if (srtp === "sdes_mandatory")
-            rtpType = " (SDES-SRTP mandatory)";
+        if (srtp === "sdes_optional") rtpType = " (SDES-SRTP offered)";
+        else if (srtp === "sdes_mandatory") rtpType = " (SDES-SRTP mandatory)";
         let extra = "";
         if (this.offerlessInvite) {
             extra = " (no SDP offer provided)";
@@ -236,7 +290,12 @@ class Voip24hModule {
     }
 
     _handleProgress(result, jsep) {
-        Janus.log("There's early media from " + result["username"] + ", waiting for the call!", jsep);
+        Janus.log(
+            "There's early media from " +
+                result["username"] +
+                ", waiting for the call!",
+            jsep,
+        );
         if (jsep) {
             this.sipcall.handleRemoteJsep({
                 jsep: jsep,
@@ -244,7 +303,7 @@ class Voip24hModule {
                     const hangup = { request: "hangup" };
                     this.sipcall.send({ message: hangup });
                     this.sipcall.hangup();
-                }
+                },
             });
         }
     }
@@ -259,7 +318,7 @@ class Voip24hModule {
                     const hangup = { request: "hangup" };
                     this.sipcall.send({ message: hangup });
                     this.sipcall.hangup();
-                }
+                },
             });
         }
     }
@@ -269,14 +328,37 @@ class Voip24hModule {
     }
 
     _handleHangup(result) {
-        Janus.log("Call hung up (" + result["code"] + " " + result["reason"] + ")!");
+        Janus.log(
+            "Call hung up (" + result["code"] + " " + result["reason"] + ")!",
+        );
+
         this.dataJsep = "";
-        // this.sipcall.hangup();
         this.sipcall.callId = null;
         this.doAudio = true;
         this.offerlessInvite = false;
 
-        this.inCall = false;  // call đã kết thúc, nhưng có thể chưa cleanup xong
+        this.inCall = false;
+
+        // ✅ 1) Chủ động đóng webrtc/pc để Janus cleanup nhanh hơn
+        try {
+            // gửi hangup request (nếu còn dialog)
+            this.sipcall.send({ message: { request: "hangup" } });
+        } catch (e) {}
+        try {
+            this.sipcall.hangup(); // đóng PeerConnection phía browser
+        } catch (e) {}
+
+        // ✅ 2) Fallback: nếu oncleanup không đến, vẫn mở khóa call tiếp
+        setTimeout(() => {
+            if (!this.readyForNext) {
+                Janus.warn(
+                    "Fallback unlock readyForNext (oncleanup not fired in time)",
+                );
+                this.readyForNext = true;
+            }
+        }, 1200);
+
+        // ... phần mapping event BusyHere/ToBye/... của bạn giữ nguyên
         const dataCallback = {};
         let event = EventSipGateway.Hangup;
         const reasonHangup = result["reason"];
@@ -297,75 +379,85 @@ class Voip24hModule {
             default:
                 event = EventSipGateway.Hangup;
         }
-        let pushEvent = this.statusCallCurrent?.onmessageOutSide;
-        if (pushEvent) {
-            pushEvent(event.toEventSipGateWay(), dataCallback);
-        }
+        const pushEvent = this.statusCallCurrent?.onmessageOutSide;
+        if (pushEvent) pushEvent(event.toEventSipGateWay(), dataCallback);
     }
 
     _handleOnLocalTrack(track, on) {
         Janus.debug("Local track " + (on ? "added" : "removed") + ":", track);
-		var trackId = track.id.replace(/[{}]/g, "");
-		if(!on) {
-			// Track removed, get rid of the stream and the rendering
-			var stream = this.localTracks[trackId];
-			if(stream) {
-				try {
-					var tracks = stream.getTracks();
-					for(var i in tracks) {
-						var mst = tracks[i];
-						if(mst)
-							mst.stop();
-					}
-				} catch(e) {}
-			}
-			delete this.localTracks[trackId];
-			return;
-		}
-		// If we're here, a new track was added
-		var stream = this.localTracks[trackId];
-		if(stream) {
-			// We've been here already
-			return;
-		}
-		if(track.kind === "audio") {
-			// We ignore local audio tracks, they'd generate echo anyway
-		} else {
-			// New video track: create a stream out of it
-		}
-		if(this.sipcall.webrtcStuff.pc.iceConnectionState !== "completed" &&
-				this.sipcall.webrtcStuff.pc.iceConnectionState !== "connected") {
-		}
+        var trackId = track.id.replace(/[{}]/g, "");
+        if (!on) {
+            // Track removed, get rid of the stream and the rendering
+            var stream = this.localTracks[trackId];
+            if (stream) {
+                try {
+                    var tracks = stream.getTracks();
+                    for (var i in tracks) {
+                        var mst = tracks[i];
+                        if (mst) mst.stop();
+                    }
+                } catch (e) {}
+            }
+            delete this.localTracks[trackId];
+            return;
+        }
+        // If we're here, a new track was added
+        var stream = this.localTracks[trackId];
+        if (stream) {
+            // We've been here already
+            return;
+        }
+        if (track.kind === "audio") {
+            // We ignore local audio tracks, they'd generate echo anyway
+        } else {
+            // New video track: create a stream out of it
+        }
+        if (
+            this.sipcall.webrtcStuff.pc.iceConnectionState !== "completed" &&
+            this.sipcall.webrtcStuff.pc.iceConnectionState !== "connected"
+        ) {
+        }
     }
 
     _handleOnRemoteTrack(track, mid, on) {
-        Janus.debug("Remote track (mid=" + mid + ") " + (on ? "added" : "removed") + ":", track);
-		if(!on) {
-			// Track removed, get rid of the stream and the rendering
-			$('#peervideom' + mid).remove();
-			delete this.remoteTracks[mid];
-			return;
-		}
-		// If we're here, a new track was added
-		if(track.kind === "audio") {
-			// New audio track: create a stream out of it, and use a hidden <audio> element
-			const stream = new MediaStream([track]);
-			this.remoteTracks[mid] = stream;
-			Janus.log("Created remote audio stream:", stream);
-			$('#audiostream').append('<audio class="hide" id="peervideom' + mid + '" autoplay playsinline/>');
-			Janus.attachMediaStream($('#peervideom' + mid).get(0), stream);
-		}
+        Janus.debug(
+            "Remote track (mid=" +
+                mid +
+                ") " +
+                (on ? "added" : "removed") +
+                ":",
+            track,
+        );
+        if (!on) {
+            // Track removed, get rid of the stream and the rendering
+            $("#peervideom" + mid).remove();
+            delete this.remoteTracks[mid];
+            return;
+        }
+        // If we're here, a new track was added
+        if (track.kind === "audio") {
+            // New audio track: create a stream out of it, and use a hidden <audio> element
+            const stream = new MediaStream([track]);
+            this.remoteTracks[mid] = stream;
+            Janus.log("Created remote audio stream:", stream);
+            $("#audiostream").append(
+                '<audio class="hide" id="peervideom' +
+                    mid +
+                    '" autoplay playsinline/>',
+            );
+            Janus.attachMediaStream($("#peervideom" + mid).get(0), stream);
+        }
     }
 
     _handleOnCleanup() {
         Janus.log(" ::: Got a cleanup notification :::");
-		$('#audiostream').empty();
-		if(this.sipcall) {
-			delete this.sipcall.callId;
-			delete this.sipcall.doAudio;
-		}
-		this.localTracks = {};
-		this.remoteTracks = {};
+        $("#audiostream").empty();
+        if (this.sipcall) {
+            delete this.sipcall.callId;
+            delete this.sipcall.doAudio;
+        }
+        this.localTracks = {};
+        this.remoteTracks = {};
 
         // RẤT QUAN TRỌNG: đánh dấu đã sẵn sàng cho call mới
         this.readyForNext = true;
@@ -377,7 +469,10 @@ class Voip24hModule {
             return;
         }
         const userAgent = navigator.userAgent.toLowerCase();
-        if (userAgent.indexOf("android") > -1 || userAgent.indexOf("iphone") > -1) {
+        if (
+            userAgent.indexOf("android") > -1 ||
+            userAgent.indexOf("iphone") > -1
+        ) {
             console.error("Janus error, missing permission", error);
             return;
         }
@@ -390,17 +485,23 @@ class Voip24hModule {
     }
 
     pushEventToSide = (callbackToOutSide) => {
-        this.statusCallCurrent = (typeof callbackToOutSide.onmessageOutSide == "function") ? callbackToOutSide : () => { };
+        this.statusCallCurrent =
+            typeof callbackToOutSide.onmessageOutSide == "function"
+                ? callbackToOutSide
+                : () => {};
 
-        callbackToOutSide.onmessageOutSide = (typeof callbackToOutSide.onmessageOutSide == "function") ? callbackToOutSide.onmessageOutSide : () => { };
-        this.onmessageOutSide = callbackToOutSide.onmessageOutSide
-    }
+        callbackToOutSide.onmessageOutSide =
+            typeof callbackToOutSide.onmessageOutSide == "function"
+                ? callbackToOutSide.onmessageOutSide
+                : () => {};
+        this.onmessageOutSide = callbackToOutSide.onmessageOutSide;
+    };
 
     hangUp() {
         Janus.log("Hanging up call");
         var hangup = { request: "hangup" };
-		this.sipcall.send({ message: hangup });
-        this.sipcall.hangup();
+        this.sipcall.send({ message: hangup });
+        // this.sipcall.hangup();
     }
 
     registerSip = async (ipSip, sip, secret) => {
@@ -414,7 +515,7 @@ class Voip24hModule {
         password = secret;
         register = {
             request: "register",
-            username: username
+            username: username,
         };
         var authuser = sip;
         if (authuser !== "") {
@@ -427,10 +528,10 @@ class Voip24hModule {
         register["secret"] = password;
         register["proxy"] = sipserver;
         this.sipcall.send({ message: register });
+    };
+    isRegistered() {
+        return this.checkRegistered == EventSipGateway.Registered;
     }
-    isRegistered() { 
-		return this.checkRegistered == EventSipGateway.Registered
-	}
 
     // call = async (phonenumber) => {
     //     if (this.isRegistered() == true) {
@@ -476,7 +577,9 @@ class Voip24hModule {
         }
 
         if (!this.readyForNext) {
-            Janus.warn("Call not allowed: previous call not fully cleaned up yet");
+            Janus.warn(
+                "Call not allowed: previous call not fully cleaned up yet",
+            );
             return false; // hoặc chờ (đợi readyForNext=true) nếu bạn muốn block tại đây
         }
 
@@ -491,23 +594,27 @@ class Voip24hModule {
 
         return new Promise((resolve) => {
             handle.createOffer({
-            tracks,
-            success: (jsep) => {
-                Janus.debug("Got SDP!", jsep);
-                const body = { request: "call", uri: usernameAc, autoaccept_reinvites: false };
-                handle.send({ message: body, jsep });
-                resolve(true);
-            },
-            error: (error) => {
-                Janus.error("WebRTC error...", error);
-                if (String(error).includes("Requested device not found")) {
-                    this.checkDevice = false;
-                    resolve("DEVICE_NOT_FOUND");
-                }
-                this.inCall = false;
-                this.readyForNext = true;
-                resolve(false);
-            },
+                tracks,
+                success: (jsep) => {
+                    Janus.debug("Got SDP!", jsep);
+                    const body = {
+                        request: "call",
+                        uri: usernameAc,
+                        autoaccept_reinvites: false,
+                    };
+                    handle.send({ message: body, jsep });
+                    resolve(true);
+                },
+                error: (error) => {
+                    Janus.error("WebRTC error...", error);
+                    if (String(error).includes("Requested device not found")) {
+                        this.checkDevice = false;
+                        resolve("DEVICE_NOT_FOUND");
+                    }
+                    this.inCall = false;
+                    this.readyForNext = true;
+                    resolve(false);
+                },
             });
         });
     };
@@ -516,7 +623,9 @@ class Voip24hModule {
         if (this.isRegistered() === true) {
             // this.hangUp();
             if (!this.readyForNext) {
-                Janus.warn("Call not allowed: previous call not fully cleaned up yet");
+                Janus.warn(
+                    "Call not allowed: previous call not fully cleaned up yet",
+                );
                 return false; // hoặc chờ (đợi readyForNext=true) nếu bạn muốn block tại đây
             }
 
@@ -524,17 +633,22 @@ class Voip24hModule {
             this.readyForNext = false;
 
             const helperId = null;
-            const handle = helperId ? helpers[helperId].sipcall : this.sipcall;
+            // const handle = helperId ? helpers[helperId].sipcall : this.sipcall;
+            const handle = helperId ? this.helpers[helperId].sipcall : this.sipcall;
             const prefix = helperId ? `[Helper #${helperId}]` : "";
             const usernameAc = `sip:${phonenumber}@${this.ip}`;
             handle.doAudio = true;
             const tracks = [{ type: "audio", capture: true, recv: true }];
-    
+
             handle.createOffer({
                 tracks: tracks,
                 success: (jsep) => {
                     Janus.debug("Got SDP!", jsep);
-                    const body = { request: "call", uri: usernameAc, autoaccept_reinvites: false };
+                    const body = {
+                        request: "call",
+                        uri: usernameAc,
+                        autoaccept_reinvites: false,
+                    };
                     handle.send({ message: body, jsep: jsep });
                 },
                 error: (error) => {
@@ -551,26 +665,30 @@ class Voip24hModule {
             return false;
         }
     };
-    
 
-    reject = async() => {
+    reject = async () => {
         var body = { request: "decline" };
         this.sipcall.send({ message: body });
-    }
+    };
 
-    answer = async() => {
-        var sipcallAction = (this.offerlessInvite ? this.sipcall.createOffer : this.sipcall.createAnswer);
-        console.log(sipcallAction)
+    answer = async () => {
+        var sipcallAction = this.offerlessInvite
+            ? this.sipcall.createOffer
+            : this.sipcall.createAnswer;
+        console.log(sipcallAction);
         let tracks = [];
         var sipcall = this.sipcall;
-        if (this.doAudio){
+        if (this.doAudio) {
             var doAudio = true;
-            tracks.push({ type: 'audio', capture: true, recv: true });
+            tracks.push({ type: "audio", capture: true, recv: true });
             sipcallAction({
                 jsep: this.dataJsep,
                 tracks: tracks,
                 success: function (dataJsep) {
-                    Janus.debug("Got SDP " + dataJsep.type + "! audio="+ doAudio + ":", dataJsep);
+                    Janus.debug(
+                        "Got SDP " + dataJsep.type + "! audio=" + doAudio + ":",
+                        dataJsep,
+                    );
                     sipcall.doAudio = doAudio;
                     var body = { request: "accept" };
                     body["autoaccept_reinvites"] = false;
@@ -580,10 +698,10 @@ class Voip24hModule {
                     Janus.error("WebRTC error:", error);
                     var body = { request: "decline", code: 480 };
                     sipcall.send({ message: body });
-                }
+                },
             });
         }
-    }
+    };
 
     toggleHold = () => {
         if (this.checkHold != EventSipGateway.Holding) {
@@ -593,7 +711,7 @@ class Voip24hModule {
             var unholdaction = { request: "unhold" };
             this.sipcall.send({ message: unholdaction });
         }
-    }
+    };
 
     toggleMute = () => {
         let muted = this.sipcall.isAudioMuted();
@@ -604,30 +722,32 @@ class Voip24hModule {
             this.sipcall.muteAudio();
         }
         muted = this.sipcall.isAudioMuted();
-    }
+    };
 
     transfer = (transferToNumber) => {
         var address = "sip:" + transferToNumber + "@" + this.ip;
-        if (address === '') { return; }
+        if (address === "") {
+            return;
+        }
         var msg = { request: "transfer", uri: address };
         this.sipcall.send({ message: msg });
         var sipcall = this.sipcall;
         setTimeout(function () {
-            sipcall.hangup()
+            sipcall.hangup();
         }, 2000);
-    }
+    };
 
     sendDtmf = (number) => {
         this.sipcall.dtmf({ dtmf: { tones: number } });
-    }
+    };
 
     isMute = () => {
         return this.sipcall.isAudioMuted();
-    }
+    };
 
     isHold = () => {
         return this.checkHold == EventSipGateway.Holding;
-    }
+    };
 
     hasCheckDevice = () => {
         var checkDevice = this.checkDevice;
@@ -636,7 +756,7 @@ class Voip24hModule {
                 resolve(checkDevice);
             }, 500);
         });
-    }
+    };
 
     release = () => {
         this.janus.destroy();
@@ -658,11 +778,11 @@ class Voip24hModule {
         this.offerlessInvite = "";
         this.checkRegistered = "";
         return;
-    }
+    };
 
     //Actions call waiting by add new a session helper
     addHelperForCallWaiting = (sip) => {
-        if(this.helpersCount == 0){
+        if (this.helpersCount == 0) {
             this.helpersCount++;
             this.sipHandle = new Janus({
                 server: this.server,
@@ -675,38 +795,47 @@ class Voip24hModule {
                             this.sipcallHelper.send({
                                 message: {
                                     request: "register",
-                                    username: "sip:"+sip+"@"+this.ip,
+                                    username: "sip:" + sip + "@" + this.ip,
                                     // secret: secret,
                                     // display_name: sip,
                                     type: "helper",
-                                    master_id: this.master_id
+                                    master_id: this.master_id,
                                 },
                                 success: (response) => {
-                                    Janus.log("Helper session registered:", "success");
+                                    Janus.log(
+                                        "Helper session registered:",
+                                        "success",
+                                    );
                                 },
                                 error: (error) => {
-                                    Janus.error("Helper session registration failed:", error);
-                                }
-                            })
+                                    Janus.error(
+                                        "Helper session registration failed:",
+                                        error,
+                                    );
+                                },
+                            });
                         },
                         error: (error) => {
                             Janus.error("Helper session attach failed:", error);
                         },
-                        onmessage: (msg, jsep) => this._handleOnMessageHelper(msg, jsep),
-                        onlocaltrack: (track, on) => this._handleOnLocalTrackHelper(track, on),
-                        onremotetrack: (track, mid, on) => this._handleOnRemoteTrackHelper(track, mid, on),
-                        oncleanup: () => this._handleOnCleanupHelper()
-                    })
+                        onmessage: (msg, jsep) =>
+                            this._handleOnMessageHelper(msg, jsep),
+                        onlocaltrack: (track, on) =>
+                            this._handleOnLocalTrackHelper(track, on),
+                        onremotetrack: (track, mid, on) =>
+                            this._handleOnRemoteTrackHelper(track, mid, on),
+                        oncleanup: () => this._handleOnCleanupHelper(),
+                    });
                 },
                 error: (error) => {
                     Janus.error("SIP session attach failed:", error);
                 },
                 destroyed: () => {
                     Janus.log("SIP session destroyed");
-                }
-            })
+                },
+            });
         }
-    }
+    };
     _handleOnMessageHelper(msg, jsep) {
         Janus.debug(" ::: Got a message :::", msg);
         const error = msg["error"];
@@ -726,18 +855,28 @@ class Voip24hModule {
                 case EventSipGateway.RegistrationFailed:
                     this.checkRegisteredHelper = "";
                     event = EventSipGateway.RegistrationFailed;
-                    Janus.warn("Registration helper failed: " + result["code"] + " " + result["reason"]);
+                    Janus.warn(
+                        "Registration helper failed: " +
+                            result["code"] +
+                            " " +
+                            result["reason"],
+                    );
                     break;
                 case EventSipGateway.Registered:
                     event = EventSipGateway.Registered;
                     this._handleRegisteredHelper(result, jsep);
                     break;
                 case EventSipGateway.Calling:
-                    event === EventSipGateway.Calling
+                    event === EventSipGateway.Calling;
                     Janus.log("Waiting for the peer to answer...");
                     break;
                 case EventSipGateway.Incomingcall:
-                    this._handleIncomingCallHelper(result, jsep, callId, dataCallback);
+                    this._handleIncomingCallHelper(
+                        result,
+                        jsep,
+                        callId,
+                        dataCallback,
+                    );
                     return;
                 case EventSipGateway.Accepting:
                     return;
@@ -770,7 +909,9 @@ class Voip24hModule {
 
     _handleRegisteredHelper(result, jsep) {
         this.checkRegisteredHelper = EventSipGateway.Registered;
-        Janus.log("Successfully registered helper as " + result["username"] + "!");
+        Janus.log(
+            "Successfully registered helper as " + result["username"] + "!",
+        );
         this.registeredHelper = true;
         // const div1 = document.createElement('div');
         // div1.innerHTML = `<div class="hide" id="audiostream"></div>`;
@@ -785,25 +926,29 @@ class Voip24hModule {
         const phoneNumber = partsPhone[0];
         this.doAudio = true;
         if (jsep) {
-            this.doAudio = (jsep.sdp.indexOf("m=audio ") > -1);
-            Janus.debug("Audio " + (this.doAudio ? "has" : "has NOT") + " been negotiated");
+            this.doAudio = jsep.sdp.indexOf("m=audio ") > -1;
+            Janus.debug(
+                "Audio " +
+                    (this.doAudio ? "has" : "has NOT") +
+                    " been negotiated",
+            );
         } else {
-            Janus.log("This call doesn't contain an offer... we'll need to provide one ourselves");
+            Janus.log(
+                "This call doesn't contain an offer... we'll need to provide one ourselves",
+            );
             this.offerlessInvite = true;
         }
         let transfer = "";
         const referredBy = result["referred_by"];
         if (referredBy) {
             transfer = " (referred by " + referredBy + ")";
-            transfer = transfer.replace(new RegExp('<', 'g'), '&lt');
-            transfer = transfer.replace(new RegExp('>', 'g'), '&gt');
+            transfer = transfer.replace(new RegExp("<", "g"), "&lt");
+            transfer = transfer.replace(new RegExp(">", "g"), "&gt");
         }
         let rtpType = "";
         const srtp = result["srtp"];
-        if (srtp === "sdes_optional")
-            rtpType = " (SDES-SRTP offered)";
-        else if (srtp === "sdes_mandatory")
-            rtpType = " (SDES-SRTP mandatory)";
+        if (srtp === "sdes_optional") rtpType = " (SDES-SRTP offered)";
+        else if (srtp === "sdes_mandatory") rtpType = " (SDES-SRTP mandatory)";
         let extra = "";
         if (this.offerlessInvite) {
             extra = " (no SDP offer provided)";
@@ -819,7 +964,12 @@ class Voip24hModule {
     }
 
     _handleProgressHelper(result, jsep) {
-        Janus.log("There's early media from " + result["username"] + ", waiting for the call!", jsep);
+        Janus.log(
+            "There's early media from " +
+                result["username"] +
+                ", waiting for the call!",
+            jsep,
+        );
         if (jsep) {
             this.sipcallHelper.handleRemoteJsep({
                 jsep: jsep,
@@ -827,7 +977,7 @@ class Voip24hModule {
                     const hangup = { request: "hangup" };
                     this.sipcallHelper.send({ message: hangup });
                     this.sipcallHelper.hangup();
-                }
+                },
             });
         }
     }
@@ -842,7 +992,7 @@ class Voip24hModule {
                     const hangup = { request: "hangup" };
                     this.sipcallHelper.send({ message: hangup });
                     this.sipcallHelper.hangup();
-                }
+                },
             });
         }
     }
@@ -852,15 +1002,51 @@ class Voip24hModule {
     }
 
     _handleHangupHelper(result) {
-        Janus.log("Call hung up (" + result["code"] + " " + result["reason"] + ")!");
+        Janus.log(
+            "Call hung up helper (" +
+                result["code"] +
+                " " +
+                result["reason"] +
+                ")!",
+        );
+
+        if (this.sipcallHelper) {
+            this.sipcallHelper.hangup();
+        }
+
+        
+
         this.dataJsepHelper = "";
-        this.sipcallHelper.hangup();
         this.sipcallHelper.callId = null;
         this.doAudio = true;
         this.offerlessInvite = false;
+
+         this.inCall = false;
+
+        // ✅ 1) Chủ động đóng webrtc/pc để Janus cleanup nhanh hơn
+        try {
+            // gửi hangup request (nếu còn dialog)
+            this.sipcallHelper.send({ message: { request: "hangup" } });
+        } catch (e) {}
+        try {
+            this.sipcallHelper.hangup(); // đóng PeerConnection phía browser
+        } catch (e) {}
+
+        // ✅ 2) Fallback: nếu oncleanup không đến, vẫn mở khóa call tiếp
+        setTimeout(() => {
+            if (!this.readyForNext) {
+                Janus.warn(
+                    "Fallback unlock readyForNext (oncleanup not fired in time)",
+                );
+                this.readyForNext = true;
+            }
+        }, 1200);
+        
+
         const dataCallback = {};
         let event = EventSipGateway.Hangup;
         const reasonHangup = result["reason"];
+
         switch (reasonHangup) {
             case EventHangup.BusyHere:
                 event = EventSipGateway.Reject;
@@ -878,6 +1064,7 @@ class Voip24hModule {
             default:
                 event = EventSipGateway.Hangup;
         }
+
         let pushEvent = this.statusCallCurrent?.onmessageOutSide;
         if (pushEvent) {
             pushEvent(event.toEventSipGateWay(), dataCallback);
@@ -886,67 +1073,80 @@ class Voip24hModule {
 
     _handleOnLocalTrackHelper(track, on) {
         Janus.debug("Local track " + (on ? "added" : "removed") + ":", track);
-		var trackId = track.id.replace(/[{}]/g, "");
-		if(!on) {
-			// Track removed, get rid of the stream and the rendering
-			var stream = this.localTracks[trackId];
-			if(stream) {
-				try {
-					var tracks = stream.getTracks();
-					for(var i in tracks) {
-						var mst = tracks[i];
-						if(mst)
-							mst.stop();
-					}
-				} catch(e) {}
-			}
-			delete this.localTracks[trackId];
-			return;
-		}
-		// If we're here, a new track was added
-		var stream = this.localTracks[trackId];
-		if(stream) {
-			// We've been here already
-			return;
-		}
-		if(track.kind === "audio") {
-			// We ignore local audio tracks, they'd generate echo anyway
-		} else {
-			// New video track: create a stream out of it
-		}
-		if(this.sipcallHelper.webrtcStuff.pc.iceConnectionState !== "completed" &&
-				this.sipcallHelper.webrtcStuff.pc.iceConnectionState !== "connected") {
-		}
+        var trackId = track.id.replace(/[{}]/g, "");
+        if (!on) {
+            // Track removed, get rid of the stream and the rendering
+            var stream = this.localTracks[trackId];
+            if (stream) {
+                try {
+                    var tracks = stream.getTracks();
+                    for (var i in tracks) {
+                        var mst = tracks[i];
+                        if (mst) mst.stop();
+                    }
+                } catch (e) {}
+            }
+            delete this.localTracks[trackId];
+            return;
+        }
+        // If we're here, a new track was added
+        var stream = this.localTracks[trackId];
+        if (stream) {
+            // We've been here already
+            return;
+        }
+        if (track.kind === "audio") {
+            // We ignore local audio tracks, they'd generate echo anyway
+        } else {
+            // New video track: create a stream out of it
+        }
+        if (
+            this.sipcallHelper.webrtcStuff.pc.iceConnectionState !==
+                "completed" &&
+            this.sipcallHelper.webrtcStuff.pc.iceConnectionState !== "connected"
+        ) {
+        }
     }
 
     _handleOnRemoteTrackHelper(track, mid, on) {
-        Janus.debug("Remote track (mid=" + mid + ") " + (on ? "added" : "removed") + ":", track);
-		if(!on) {
-			// Track removed, get rid of the stream and the rendering
-			$('#peervideom' + mid).remove();
-			delete this.remoteTracks[mid];
-			return;
-		}
-		// If we're here, a new track was added
-		if(track.kind === "audio") {
-			// New audio track: create a stream out of it, and use a hidden <audio> element
-			const stream = new MediaStream([track]);
-			this.remoteTracks[mid] = stream;
-			Janus.log("Created remote audio stream:", stream);
-			$('#audiostream').append('<audio class="hide" id="peervideom' + mid + '" autoplay playsinline/>');
-			Janus.attachMediaStream($('#peervideom' + mid).get(0), stream);
-		}
+        Janus.debug(
+            "Remote track (mid=" +
+                mid +
+                ") " +
+                (on ? "added" : "removed") +
+                ":",
+            track,
+        );
+        if (!on) {
+            // Track removed, get rid of the stream and the rendering
+            $("#peervideom" + mid).remove();
+            delete this.remoteTracks[mid];
+            return;
+        }
+        // If we're here, a new track was added
+        if (track.kind === "audio") {
+            // New audio track: create a stream out of it, and use a hidden <audio> element
+            const stream = new MediaStream([track]);
+            this.remoteTracks[mid] = stream;
+            Janus.log("Created remote audio stream:", stream);
+            $("#audiostream").append(
+                '<audio class="hide" id="peervideom' +
+                    mid +
+                    '" autoplay playsinline/>',
+            );
+            Janus.attachMediaStream($("#peervideom" + mid).get(0), stream);
+        }
     }
 
     _handleOnCleanupHelper() {
         Janus.log(" ::: Got a cleanup notification :::");
-		$('#audiostream').empty();
-		if(this.sipcallHelper) {
-			delete this.sipcallHelper.callId;
-			delete this.sipcallHelper.doAudio;
-		}
-		this.localTracks = {};
-		this.remoteTracks = {};
+        $("#audiostream").empty();
+        if (this.sipcallHelper) {
+            delete this.sipcallHelper.callId;
+            delete this.sipcallHelper.doAudio;
+        }
+        this.localTracks = {};
+        this.remoteTracks = {};
     }
 
     _handleJanusErrorHelper(error) {
@@ -955,7 +1155,10 @@ class Voip24hModule {
             return;
         }
         const userAgent = navigator.userAgent.toLowerCase();
-        if (userAgent.indexOf("android") > -1 || userAgent.indexOf("iphone") > -1) {
+        if (
+            userAgent.indexOf("android") > -1 ||
+            userAgent.indexOf("iphone") > -1
+        ) {
             console.error("Janus error, missing permission", error);
             return;
         }
@@ -971,29 +1174,37 @@ class Voip24hModule {
         Janus.log("Hanging up call");
         this.sipcallHelper.hangup();
     }
-   
-    isRegisteredHelper() { 
-		return this.checkRegisteredHelper == EventSipGateway.Registered
-	}
 
-
-    rejectHelper = async() => {
-        var body = { request: "decline" };
-        this.sipcallHelper.send({ message: body });
+    isRegisteredHelper() {
+        return this.checkRegisteredHelper == EventSipGateway.Registered;
     }
 
-    answerHelper = async() => {
-        var sipcallAction = (this.offerlessInvite ? this.sipcallHelper.createOffer : this.sipcallHelper.createAnswer);
+    rejectHelper = async () => {
+        var body = { request: "decline" };
+        this.sipcallHelper.send({ message: body });
+    };
+
+    answerHelper = async () => {
+        var sipcallAction = this.offerlessInvite
+            ? this.sipcallHelper.createOffer
+            : this.sipcallHelper.createAnswer;
         let tracks = [];
         var sipcall = this.sipcallHelper;
-        if (this.doAudio){
+        if (this.doAudio) {
             var doAudio = true;
-            tracks.push({ type: 'audio', capture: true, recv: true });
+            tracks.push({ type: "audio", capture: true, recv: true });
             sipcallAction({
                 jsep: this.dataJsepHelper,
                 tracks: tracks,
                 success: function (dataJsepHelper) {
-                    Janus.debug("Got SDP " + dataJsepHelper.type + "! audio="+ doAudio + ":", dataJsepHelper);
+                    Janus.debug(
+                        "Got SDP " +
+                            dataJsepHelper.type +
+                            "! audio=" +
+                            doAudio +
+                            ":",
+                        dataJsepHelper,
+                    );
                     sipcall.doAudio = doAudio;
                     var body = { request: "accept" };
                     body["autoaccept_reinvites"] = false;
@@ -1003,10 +1214,10 @@ class Voip24hModule {
                     Janus.error("WebRTC error:", error);
                     var body = { request: "decline", code: 480 };
                     sipcall.send({ message: body });
-                }
+                },
             });
         }
-    }
+    };
 
     toggleHoldHelper = () => {
         if (this.checkHoldHelper != EventSipGateway.Holding) {
@@ -1016,7 +1227,7 @@ class Voip24hModule {
             var unholdaction = { request: "unhold" };
             this.sipcallHelper.send({ message: unholdaction });
         }
-    }
+    };
 
     toggleMuteHelper = () => {
         let muted = this.sipcallHelper.isAudioMuted();
@@ -1027,33 +1238,35 @@ class Voip24hModule {
             this.sipcallHelper.muteAudio();
         }
         muted = this.sipcallHelper.isAudioMuted();
-    }
+    };
 
     transferHelper = (transferToNumber) => {
         var address = "sip:" + transferToNumber + "@" + this.ip;
-        if (address === '') { return; }
+        if (address === "") {
+            return;
+        }
         var msg = { request: "transfer", uri: address };
         this.sipcallHelper.send({ message: msg });
         var sipcall = this.sipcallHelper;
         setTimeout(function () {
-            sipcall.hangup()
+            sipcall.hangup();
         }, 2000);
-    }
+    };
 
     sendDtmfHelper = (number) => {
         this.sipcallHelper.dtmf({ dtmf: { tones: number } });
-    }
+    };
 
     isMuteHelper = () => {
         return this.sipcallHelper.isAudioMuted();
-    }
+    };
 
     isHoldHelper = () => {
         return this.checkHoldHelper == EventSipGateway.Holding;
-    }
+    };
     releaseSessionHelper = () => {
         this.sipHandle.destroy();
-    }
+    };
 }
 
 export { Voip24hModule, EventSipGateway };
